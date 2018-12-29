@@ -40,6 +40,8 @@
             </Button.RenderTransform>
         </Button>
         <Button x:Name="btn_stop" Content="STOP" HorizontalAlignment="Left" Margin="579,235,0,0" VerticalAlignment="Top" Width="127" Height="37" Click="btn_stop_Click"/>
+        <Button x:Name="btn_tcp" Content="TCP" HorizontalAlignment="Left" Margin="23,173,0,0" VerticalAlignment="Top" Width="119" Height="35" Click="btn_tcp_Click"/>
+        <Button x:Name="btn_udp" Content="UDP" HorizontalAlignment="Left" Margin="23,220,0,0" VerticalAlignment="Top" Width="119" Height="34" Click="btn_udp_Click"/>
 
     </Grid>
 </Window>

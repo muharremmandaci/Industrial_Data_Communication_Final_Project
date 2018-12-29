@@ -25,16 +25,22 @@ namespace Industrial_Data_Communication
     public partial class MainWindow : Window
     {
         UdpClient UdpClient;
+        TcpClient TcpClient;
+        TcpClient TcpClient2;
 
         String ip1;
         String ip2;
         int port1;
         int port2;
 
+        bool is_tcp = false;
+
         byte function_code = 0;
         byte number_value = 0;
         byte starting_addr = 0;
         byte[] data = new byte[7];
+
+        System.Windows.Threading.DispatcherTimer dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
 
         public bool is_stop = false;
 
@@ -45,7 +51,10 @@ namespace Industrial_Data_Communication
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            UdpClient = new UdpClient(8000);
+            dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
+            dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 1);
+
+            
         }
 
         private void update()
@@ -55,8 +64,6 @@ namespace Industrial_Data_Communication
 
             ip2 = txt_ip2.Text;
             port2 = Convert.ToInt32(txt_port2.Text);
-
-
         }
 
         private void btn_send_command_Click(object sender, RoutedEventArgs e)
@@ -103,20 +110,36 @@ namespace Industrial_Data_Communication
                 {
                     sending_bytes[i] = data[i + starting_addr];
                 }
+                Byte[] receiveBytes;
+                String responseData = String.Empty;
+                if (is_tcp)
+                {
+                    TcpClient = new TcpClient();
+                    TcpClient.Connect(ip1, port1);
+                    NetworkStream stream = TcpClient.GetStream();
+                    stream.Write(data, 0, data.Length);
+                    receiveBytes = new Byte[4 + number_value];
+                    Int32 bytes = stream.Read(receiveBytes, 0, 4 + number_value);
+                    responseData = System.Text.Encoding.ASCII.GetString(receiveBytes, 0, bytes);
+                    TcpClient.Close();
+                }
+                else
+                {
+                    UdpClient.Send(data, (3 + number_value), ip1, port1);
 
-                UdpClient.Send(data, (3 + number_value), ip1, port1);
+                    IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                    receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
 
-                IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                Byte[] receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
-
-                string returnData = Encoding.ASCII.GetString(receiveBytes);
+                    responseData = Encoding.ASCII.GetString(receiveBytes);
+                }
+                
+                
 
 
                 string deneme = "";
                 for (int i = 0; i < 3 + number_value; i++)
                 {
                     deneme += sending_bytes[i];
-
                 }
 
                 /*if(deneme == returnData)
@@ -128,9 +151,8 @@ namespace Industrial_Data_Communication
                     MessageBox.Show("communication unsuccesfully");
                 }*/
 
-                txt_response.Text = returnData;
+                txt_response.Text = responseData;
             }
-
 
             else if (function_code == 1)//read
             {
@@ -140,13 +162,29 @@ namespace Industrial_Data_Communication
                 sending_bytes[1] = starting_addr;
                 sending_bytes[2] = number_value;
 
-                UdpClient.Send(data, 3, ip1, port1);
+                Byte[] receiveBytes;
+                String responseData = String.Empty;
 
-                IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                if (is_tcp)
+                {
+                    TcpClient = new TcpClient();
+                    TcpClient.Connect(ip1, port1);
+                    NetworkStream stream = TcpClient.GetStream();
+                    stream.Write(data, 0, 3);
+                    receiveBytes = new Byte[3 + number_value];
+                    Int32 bytes = stream.Read(receiveBytes, 0, 3 + number_value);
+                    responseData = System.Text.Encoding.ASCII.GetString(receiveBytes, 0, bytes);
+                    TcpClient.Close();
+                }
+                else
+                {
+                    UdpClient.Send(data, 3, ip1, port1);
 
-                Byte[] receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
+                    IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                    receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
 
-                string returnData = Encoding.ASCII.GetString(receiveBytes);
+                    responseData = Encoding.ASCII.GetString(receiveBytes);
+                }
 
                 /*if (sending_bytes[0] == returnData[0] && sending_bytes[1] == returnData[1] && sending_bytes[2] == returnData[2])
                 {
@@ -157,7 +195,7 @@ namespace Industrial_Data_Communication
                     MessageBox.Show("communication unsuccesfully");
                 }*/
 
-                txt_response.Text = returnData;
+                txt_response.Text = responseData;
             }
 
             else if (function_code == 3)//register
@@ -168,15 +206,32 @@ namespace Industrial_Data_Communication
                 sending_bytes[1] = starting_addr;
                 sending_bytes[2] = number_value;
 
-                UdpClient.Send(data, 3, ip2, port2);
+                Byte[] receiveBytes;
+                String responseData = String.Empty;
 
-                IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                if (is_tcp)
+                {
+                    TcpClient = new TcpClient();
+                    TcpClient.Connect(ip2, port2);
+                    NetworkStream stream = TcpClient.GetStream();
+                    stream.Write(data, 0, 3);
+                    receiveBytes = new Byte[4 + number_value];
+                    Int32 bytes = stream.Read(receiveBytes, 0, 4 + number_value);
+                    responseData = System.Text.Encoding.ASCII.GetString(receiveBytes, 0, bytes);
+                    TcpClient.Close();
+                }
+                else
+                {
+                    UdpClient.Send(data, 3, ip2, port2);
 
-                Byte[] receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
+                    IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                    receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
 
-                string returnData = Encoding.ASCII.GetString(receiveBytes);
+                    responseData = Encoding.ASCII.GetString(receiveBytes);
+                }
+
                 char[] str_number = new char[number_value];
-                char[] charData = returnData.ToCharArray();
+                char[] charData = responseData.ToCharArray();
 
                 int number = 0;
 
@@ -202,20 +257,16 @@ namespace Industrial_Data_Communication
                     MessageBox.Show("communication unsuccesfully");
                 }*/
 
-                txt_response.Text = returnData + "  decimal : " + number;
+                txt_response.Text = responseData + "  decimal : " + number;
             }
 
         }
 
-        private void btn_senario_Click(object sender, RoutedEventArgs e)
+        private void udp_senario()
         {
             update();
             is_stop = false;
             double time = 0;
-
-            //for (int ct = 1; ct <= 30; ct++)
-            //{
-                DateTime start = DateTime.UtcNow;
 
                 byte[] sending_bytes = new byte[7];
 
@@ -223,17 +274,19 @@ namespace Industrial_Data_Communication
                 sending_bytes[1] = 0;
                 sending_bytes[2] = 16;
 
-                UdpClient.Send(sending_bytes, 3, ip2, port2);
-
                 IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
-                Byte[] receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
-
-                string returnData = Encoding.ASCII.GetString(receiveBytes);
                 char[] str_number = new char[16];
-                char[] charData = returnData.ToCharArray();
-
                 int number = 0;
+                int pos = 15;
+
+                DateTime start = DateTime.UtcNow;
+
+                UdpClient.Send(sending_bytes, 3, ip2, port2);
+
+                Byte[] receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
+                string returnData = Encoding.ASCII.GetString(receiveBytes);
+                char[] charData = returnData.ToCharArray();
 
                 Array.Reverse(charData);
 
@@ -241,7 +294,7 @@ namespace Industrial_Data_Communication
                 {
                     str_number[i] = charData[i];
                 }
-                int pos = 15;
+
                 foreach (char b in str_number)
                 {
                     number |= (((int)b) - 48) << pos;
@@ -282,27 +335,146 @@ namespace Industrial_Data_Communication
                     sending_bytes[6] = 1;
                 }
 
-
                 UdpClient.Send(sending_bytes, 7, ip1, port1);
 
-                RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
                 receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
 
                 returnData = Encoding.ASCII.GetString(receiveBytes);
-
 
                 DateTime end = DateTime.UtcNow;
                 TimeSpan timeDiff = end - start;
                 time += timeDiff.TotalMilliseconds;
 
-                Thread.Sleep(250);
-                txt_response.Text = "time: " + time  + "ct: ";
-            //}
+                txt_response.Text = "time: " + time + "ct: ";
+        }
+
+        private void tcp_senario()
+        {
+            update();
+
+            double time = 0;
+
+            byte[] sending_bytes = new byte[7];
+
+            sending_bytes[0] = 3;
+            sending_bytes[1] = 0;
+            sending_bytes[2] = 16;
+
+            char[] str_number = new char[16];
+            int number = 0;
+            int pos = 15;
+
+            Byte[] receiveBytes;
+            String responseData = String.Empty;
+
+            DateTime start = DateTime.UtcNow;
+
+
+            TcpClient = new TcpClient();
+            TcpClient.Connect(ip2, port2);
+            NetworkStream stream = TcpClient.GetStream();
+            stream.Write(sending_bytes, 0, 3);
+            receiveBytes = new Byte[4 + sending_bytes[2]];
+            Int32 bytes = stream.Read(receiveBytes, 0, 4 + sending_bytes[2]);
+            responseData = System.Text.Encoding.ASCII.GetString(receiveBytes, 0, bytes);
+            TcpClient.Close();
+
+            char[] charData = responseData.ToCharArray();
+
+            Array.Reverse(charData);
+
+            for (int i = 0; i < 16; i++)
+            {
+                str_number[i] = charData[i];
+            }
+
+            foreach (char b in str_number)
+            {
+                number |= (((int)b) - 48) << pos;
+                pos--;
+            }
+
+            sending_bytes[0] = 15;
+            sending_bytes[1] = 0;
+            sending_bytes[2] = 4;
+
+            if (number < 256)
+            {
+                sending_bytes[3] = 1;
+                sending_bytes[4] = 0;
+                sending_bytes[5] = 0;
+                sending_bytes[6] = 0;
+            }
+            else if (256 < number && number < 512)
+            {
+                sending_bytes[3] = 1;
+                sending_bytes[4] = 1;
+                sending_bytes[5] = 0;
+                sending_bytes[6] = 0;
+            }
+            else if (512 < number && number < 768)
+            {
+                sending_bytes[3] = 1;
+                sending_bytes[4] = 1;
+                sending_bytes[5] = 1;
+                sending_bytes[6] = 0;
+            }
+            else
+            {
+                sending_bytes[3] = 1;
+                sending_bytes[4] = 1;
+                sending_bytes[5] = 1;
+                sending_bytes[6] = 1;
+            }
+
+            TcpClient2 = new TcpClient();
+            TcpClient2.Connect(ip1, port1);
+            NetworkStream stream2 = TcpClient2.GetStream();
+            stream2.Write(sending_bytes, 0, data.Length);
+            receiveBytes = new Byte[4 + sending_bytes[2]];
+            Int32 bytes2 = stream2.Read(receiveBytes, 0, 4 + sending_bytes[2]);
+            responseData = System.Text.Encoding.ASCII.GetString(receiveBytes, 0, bytes2);
+            TcpClient2.Close();
+
+            DateTime end = DateTime.UtcNow;
+            TimeSpan timeDiff = end - start;
+            time += timeDiff.TotalMilliseconds;
+
+            txt_response.Text = "time: " + time + "ct: ";
+        }
+
+        private void btn_senario_Click(object sender, RoutedEventArgs e)
+        {
+            dispatcherTimer.Start();
+        }
+
+        private void dispatcherTimer_Tick(object sender, EventArgs e)
+        {
+            if (is_tcp)
+            {
+                tcp_senario();
+            }
+            else
+            {
+                udp_senario();
+            }
         }
 
         private void btn_stop_Click(object sender, RoutedEventArgs e)
         {
-            is_stop = true;
+            dispatcherTimer.Stop();
+        }
+
+        private void btn_tcp_Click(object sender, RoutedEventArgs e)
+        {
+            TcpClient = new TcpClient();
+            is_tcp = true;
+        }
+
+        private void btn_udp_Click(object sender, RoutedEventArgs e)
+        {
+            UdpClient = new UdpClient(8000);
+            is_tcp = false;
         }
     }
 }

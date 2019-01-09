@@ -32,6 +32,8 @@ namespace Industrial_Data_Communication
         String ip2;
         int port1;
         int port2;
+        int ct;
+        double time;
 
         bool is_tcp = false;
 
@@ -39,6 +41,7 @@ namespace Industrial_Data_Communication
         byte number_value = 0;
         byte starting_addr = 0;
         byte[] data = new byte[7];
+        byte[] leds = new byte[4];
 
         System.Windows.Threading.DispatcherTimer dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
 
@@ -53,8 +56,6 @@ namespace Industrial_Data_Communication
         {
             dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
             dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 1);
-
-            
         }
 
         private void update()
@@ -64,13 +65,6 @@ namespace Industrial_Data_Communication
 
             ip2 = txt_ip2.Text;
             port2 = Convert.ToInt32(txt_port2.Text);
-        }
-
-        private void btn_send_command_Click(object sender, RoutedEventArgs e)
-        {
-            //write coil = 3
-
-            update();
 
             if (rb_write_coil.IsChecked == true)
             {
@@ -90,150 +84,193 @@ namespace Industrial_Data_Communication
             number_value = (byte)Convert.ToInt32(txt_number_of_values.Text);
             starting_addr = (byte)Convert.ToInt32(txt_starting_addr.Text);
 
-            data[0] = function_code;
-            data[1] = starting_addr;
-            data[2] = number_value;
-            data[3] = (byte)(cb_led1.IsChecked == true ? 1 : 0);
-            data[4] = (byte)(cb_led2.IsChecked == true ? 1 : 0);
-            data[5] = (byte)(cb_led3.IsChecked == true ? 1 : 0);
-            data[6] = (byte)(cb_led4.IsChecked == true ? 1 : 0);
+            leds[0] = (byte)(cb_led1.IsChecked == true ? 1 : 0);
+            leds[1] = (byte)(cb_led2.IsChecked == true ? 1 : 0);
+            leds[2] = (byte)(cb_led3.IsChecked == true ? 1 : 0);
+            leds[3] = (byte)(cb_led4.IsChecked == true ? 1 : 0);
+        }
 
-            if (function_code == 15) //write
+        #region define modbus function
+        private String udp_write_coil()
+        {
+            byte[] sending_data = new byte[3 + number_value];
+
+            sending_data[0] = 15;
+            sending_data[1] = starting_addr;
+            sending_data[2] = number_value;
+
+            for (int i = 0; i < number_value; i++)
             {
-                byte[] sending_bytes = new byte[3 + number_value];
+                sending_data[3 + i] = leds[i + starting_addr];
+            }
 
-                sending_bytes[0] = function_code;
-                sending_bytes[1] = starting_addr;
-                sending_bytes[2] = number_value;
+            /*int crc = CS16(sending_data,3+number_value);
+            char crc1 = (char)(crc & 0xFF);
+            char crc2 = (char)(crc >> 8);
 
-                for (int i = 3; i < 3 + number_value; i++)
-                {
-                    sending_bytes[i] = data[i + starting_addr];
-                }
-                Byte[] receiveBytes;
-                String responseData = String.Empty;
+            int deneme = crc2 << 8 | crc1;*/
+
+            Byte[] receiveBytes;
+
+            UdpClient.Send(sending_data, (3 + number_value), ip1, port1);
+
+            IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+            receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
+            return (Encoding.ASCII.GetString(receiveBytes));
+        }
+
+        private String tcp_write_coil()
+        {
+            byte[] sending_data = new byte[3 + number_value];
+
+            sending_data[0] = 15;
+            sending_data[1] = starting_addr;
+            sending_data[2] = number_value;
+
+            for (int i = 0; i < number_value; i++)
+            {
+                sending_data[3 + i] = leds[i + starting_addr];
+            }
+
+            Byte[] receiveBytes;
+
+            TcpClient = new TcpClient();
+            TcpClient.Connect(ip1, port1);
+            NetworkStream stream = TcpClient.GetStream();
+            stream.Write(sending_data, 0, sending_data.Length);
+            receiveBytes = new Byte[4 + number_value];                    //15 geri dönerken 2 byte olarak dönecek
+            Int32 bytes = stream.Read(receiveBytes, 0, 4 + number_value);
+
+            TcpClient.Close();
+            return (System.Text.Encoding.ASCII.GetString(receiveBytes, 0, bytes));
+        }
+
+        private String udp_read_coil()
+        {
+            byte[] sending_data = new byte[3];
+
+            sending_data[0] = 1;
+            sending_data[1] = starting_addr;
+            sending_data[2] = number_value;
+
+            Byte[] receiveBytes;
+
+            UdpClient.Send(sending_data, 3, ip1, port1);
+
+            IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+            receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
+            return (Encoding.ASCII.GetString(receiveBytes));
+        }
+
+        private String tcp_read_coil()
+        {
+            byte[] sending_data = new byte[3];
+
+            sending_data[0] = 1;
+            sending_data[1] = starting_addr;
+            sending_data[2] = number_value;
+
+            Byte[] receiveBytes;
+
+            TcpClient = new TcpClient();
+            TcpClient.Connect(ip1, port1);
+            NetworkStream stream = TcpClient.GetStream();
+            stream.Write(sending_data, 0, sending_data.Length);
+            receiveBytes = new Byte[3 + number_value];
+            Int32 bytes = stream.Read(receiveBytes, 0, 3 + number_value);
+            TcpClient.Close();
+
+            return (System.Text.Encoding.ASCII.GetString(receiveBytes, 0, bytes));
+        }
+
+        private String udp_read_holding_reg()
+        {
+            byte[] sending_data = new byte[3];
+
+            sending_data[0] = 3;
+            sending_data[1] = starting_addr;
+            sending_data[2] = number_value;
+
+            Byte[] receiveBytes;
+
+            UdpClient.Send(sending_data, 3, ip2, port2);
+
+            IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+            receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
+
+            return (Encoding.ASCII.GetString(receiveBytes));
+        }
+
+        private String tcp_read_holding_reg()
+        {
+            byte[] sending_data = new byte[3];
+            int def_len = number_value < 10 ? 3 : 4;
+
+            sending_data[0] = 3;
+            sending_data[1] = starting_addr;
+            sending_data[2] = number_value;
+
+            Byte[] receiveBytes;
+
+            TcpClient = new TcpClient();
+            TcpClient.Connect(ip2, port2);
+            NetworkStream stream = TcpClient.GetStream();
+            stream.Write(sending_data, 0, sending_data.Length);
+            receiveBytes = new Byte[def_len + number_value];
+            Int32 bytes = stream.Read(receiveBytes, 0, def_len + number_value);
+            TcpClient.Close();
+
+            return (System.Text.Encoding.ASCII.GetString(receiveBytes, 0, bytes));
+        }
+        #endregion
+
+        private void btn_send_command_Click(object sender, RoutedEventArgs e)
+        {
+            update();
+
+            String responseData = String.Empty;
+
+            if (function_code == 15)//write coil
+            {
                 if (is_tcp)
                 {
-                    TcpClient = new TcpClient();
-                    TcpClient.Connect(ip1, port1);
-                    NetworkStream stream = TcpClient.GetStream();
-                    stream.Write(data, 0, data.Length);
-                    receiveBytes = new Byte[4 + number_value];
-                    Int32 bytes = stream.Read(receiveBytes, 0, 4 + number_value);
-                    responseData = System.Text.Encoding.ASCII.GetString(receiveBytes, 0, bytes);
-                    TcpClient.Close();
+                    responseData = tcp_write_coil();
                 }
                 else
                 {
-                    UdpClient.Send(data, (3 + number_value), ip1, port1);
-
-                    IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                    receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
-
-                    responseData = Encoding.ASCII.GetString(receiveBytes);
+                    responseData = udp_write_coil();
                 }
-                
-                
-
-
-                string deneme = "";
-                for (int i = 0; i < 3 + number_value; i++)
-                {
-                    deneme += sending_bytes[i];
-                }
-
-                /*if(deneme == returnData)
-                {
-                    MessageBox.Show("communication succesfully");
-                }
-                else
-                {
-                    MessageBox.Show("communication unsuccesfully");
-                }*/
 
                 txt_response.Text = responseData;
             }
-
-            else if (function_code == 1)//read
+            else if (function_code == 1)//read coil
             {
-                byte[] sending_bytes = new byte[3];
-
-                sending_bytes[0] = function_code;
-                sending_bytes[1] = starting_addr;
-                sending_bytes[2] = number_value;
-
-                Byte[] receiveBytes;
-                String responseData = String.Empty;
-
                 if (is_tcp)
                 {
-                    TcpClient = new TcpClient();
-                    TcpClient.Connect(ip1, port1);
-                    NetworkStream stream = TcpClient.GetStream();
-                    stream.Write(data, 0, 3);
-                    receiveBytes = new Byte[3 + number_value];
-                    Int32 bytes = stream.Read(receiveBytes, 0, 3 + number_value);
-                    responseData = System.Text.Encoding.ASCII.GetString(receiveBytes, 0, bytes);
-                    TcpClient.Close();
+                    responseData = tcp_read_coil();
                 }
                 else
                 {
-                    UdpClient.Send(data, 3, ip1, port1);
-
-                    IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                    receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
-
-                    responseData = Encoding.ASCII.GetString(receiveBytes);
+                    responseData = udp_read_coil();
                 }
-
-                /*if (sending_bytes[0] == returnData[0] && sending_bytes[1] == returnData[1] && sending_bytes[2] == returnData[2])
-                {
-                    MessageBox.Show("communication succesfully");
-                }
-                else
-                {
-                    MessageBox.Show("communication unsuccesfully");
-                }*/
 
                 txt_response.Text = responseData;
             }
-
-            else if (function_code == 3)//register
+            else if (function_code == 3)//read hold register
             {
-                byte[] sending_bytes = new byte[3];
-
-                sending_bytes[0] = function_code;
-                sending_bytes[1] = starting_addr;
-                sending_bytes[2] = number_value;
-
-                Byte[] receiveBytes;
-                String responseData = String.Empty;
-
                 if (is_tcp)
                 {
-                    TcpClient = new TcpClient();
-                    TcpClient.Connect(ip2, port2);
-                    NetworkStream stream = TcpClient.GetStream();
-                    stream.Write(data, 0, 3);
-                    receiveBytes = new Byte[4 + number_value];
-                    Int32 bytes = stream.Read(receiveBytes, 0, 4 + number_value);
-                    responseData = System.Text.Encoding.ASCII.GetString(receiveBytes, 0, bytes);
-                    TcpClient.Close();
+                    responseData = tcp_read_holding_reg();
                 }
                 else
                 {
-                    UdpClient.Send(data, 3, ip2, port2);
-
-                    IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                    receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
-
-                    responseData = Encoding.ASCII.GetString(receiveBytes);
+                    responseData = udp_read_holding_reg();
                 }
 
                 char[] str_number = new char[number_value];
                 char[] charData = responseData.ToCharArray();
-
                 int number = 0;
+                int pos = 15;
 
                 Array.Reverse(charData);
 
@@ -241,118 +278,103 @@ namespace Industrial_Data_Communication
                 {
                     str_number[i] = charData[i];
                 }
-                int pos = 15;
                 foreach (char b in str_number)
                 {
                     number |= (((int)b) - 48) << pos;
                     pos--;
                 }
-
-                /*if (sending_bytes[0] == returnData[0] && sending_bytes[1] == returnData[1] && sending_bytes[2] == returnData[2])
-                {
-                    MessageBox.Show("communication succesfully");
-                }
-                else
-                {
-                    MessageBox.Show("communication unsuccesfully");
-                }*/
-
                 txt_response.Text = responseData + "  decimal : " + number;
             }
-
         }
 
         private void udp_senario()
         {
             update();
             is_stop = false;
-            double time = 0;
 
-                byte[] sending_bytes = new byte[7];
+            byte[] sending_bytes = new byte[7];
 
-                sending_bytes[0] = 3;
-                sending_bytes[1] = 0;
-                sending_bytes[2] = 16;
+            sending_bytes[0] = 3;
+            sending_bytes[1] = 0;
+            sending_bytes[2] = 16;
 
-                IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+            IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
-                char[] str_number = new char[16];
-                int number = 0;
-                int pos = 15;
+            char[] str_number = new char[16];
+            int number = 0;
+            int pos = 15;
 
-                DateTime start = DateTime.UtcNow;
+            DateTime start = DateTime.UtcNow;
 
-                UdpClient.Send(sending_bytes, 3, ip2, port2);
+            UdpClient.Send(sending_bytes, 3, ip2, port2);
 
-                Byte[] receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
-                string returnData = Encoding.ASCII.GetString(receiveBytes);
-                char[] charData = returnData.ToCharArray();
+            Byte[] receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
+            string returnData = Encoding.ASCII.GetString(receiveBytes);
+            char[] charData = returnData.ToCharArray();
 
-                Array.Reverse(charData);
+            Array.Reverse(charData);
 
-                for (int i = 0; i < 16; i++)
-                {
-                    str_number[i] = charData[i];
-                }
+            for (int i = 0; i < 16; i++)
+            {
+                str_number[i] = charData[i];
+            }
 
-                foreach (char b in str_number)
-                {
-                    number |= (((int)b) - 48) << pos;
-                    pos--;
-                }
+            foreach (char b in str_number)
+            {
+                number |= (((int)b) - 48) << pos;
+                pos--;
+            }
 
-                sending_bytes[0] = 15;
-                sending_bytes[1] = 0;
-                sending_bytes[2] = 4;
+            sending_bytes[0] = 15;
+            sending_bytes[1] = 0;
+            sending_bytes[2] = 4;
 
 
-                if (number < 256)
-                {
-                    sending_bytes[3] = 1;
-                    sending_bytes[4] = 0;
-                    sending_bytes[5] = 0;
-                    sending_bytes[6] = 0;
-                }
-                else if (256 < number && number < 512)
-                {
-                    sending_bytes[3] = 1;
-                    sending_bytes[4] = 1;
-                    sending_bytes[5] = 0;
-                    sending_bytes[6] = 0;
-                }
-                else if (512 < number && number < 768)
-                {
-                    sending_bytes[3] = 1;
-                    sending_bytes[4] = 1;
-                    sending_bytes[5] = 1;
-                    sending_bytes[6] = 0;
-                }
-                else
-                {
-                    sending_bytes[3] = 1;
-                    sending_bytes[4] = 1;
-                    sending_bytes[5] = 1;
-                    sending_bytes[6] = 1;
-                }
+            if (number < 256)
+            {
+                sending_bytes[3] = 1;
+                sending_bytes[4] = 0;
+                sending_bytes[5] = 0;
+                sending_bytes[6] = 0;
+            }
+            else if (256 < number && number < 512)
+            {
+                sending_bytes[3] = 1;
+                sending_bytes[4] = 1;
+                sending_bytes[5] = 0;
+                sending_bytes[6] = 0;
+            }
+            else if (512 < number && number < 768)
+            {
+                sending_bytes[3] = 1;
+                sending_bytes[4] = 1;
+                sending_bytes[5] = 1;
+                sending_bytes[6] = 0;
+            }
+            else
+            {
+                sending_bytes[3] = 1;
+                sending_bytes[4] = 1;
+                sending_bytes[5] = 1;
+                sending_bytes[6] = 1;
+            }
 
-                UdpClient.Send(sending_bytes, 7, ip1, port1);
+            UdpClient.Send(sending_bytes, 7, ip1, port1);
 
-                receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
+            receiveBytes = UdpClient.Receive(ref RemoteIpEndPoint);
 
-                returnData = Encoding.ASCII.GetString(receiveBytes);
+            returnData = Encoding.ASCII.GetString(receiveBytes);
 
-                DateTime end = DateTime.UtcNow;
-                TimeSpan timeDiff = end - start;
-                time += timeDiff.TotalMilliseconds;
+            DateTime end = DateTime.UtcNow;
+            TimeSpan timeDiff = end - start;
+            time += timeDiff.TotalMilliseconds;
 
-                txt_response.Text = "time: " + time + "ct: ";
+            txt_response.Text = "time: " + time/ct + "  ct: " + ct;
         }
 
         private void tcp_senario()
         {
             update();
-
-            double time = 0;
 
             byte[] sending_bytes = new byte[7];
 
@@ -440,16 +462,23 @@ namespace Industrial_Data_Communication
             TimeSpan timeDiff = end - start;
             time += timeDiff.TotalMilliseconds;
 
-            txt_response.Text = "time: " + time + "ct: ";
+            txt_response.Text = "time: " + time/ct + "  ct: "+ct;
         }
 
         private void btn_senario_Click(object sender, RoutedEventArgs e)
         {
             dispatcherTimer.Start();
+
+            ct = 0;
+            time = 0;
+
+            btn_stop.IsEnabled = true;
+            btn_senario.IsEnabled = false;
         }
 
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
+            ct++;
             if (is_tcp)
             {
                 tcp_senario();
@@ -463,18 +492,68 @@ namespace Industrial_Data_Communication
         private void btn_stop_Click(object sender, RoutedEventArgs e)
         {
             dispatcherTimer.Stop();
+
+            btn_stop.IsEnabled = false;
+            btn_senario.IsEnabled = true;
         }
 
         private void btn_tcp_Click(object sender, RoutedEventArgs e)
         {
             TcpClient = new TcpClient();
+
+            btn_send_command.IsEnabled = true;
+            btn_senario.IsEnabled = true;
+            //btn_udp.IsEnabled = false;
+
             is_tcp = true;
         }
 
         private void btn_udp_Click(object sender, RoutedEventArgs e)
         {
             UdpClient = new UdpClient(8000);
+
+            btn_send_command.IsEnabled = true;
+            btn_senario.IsEnabled = true;
+            //btn_tcp.IsEnabled = false;
+
             is_tcp = false;
         }
+
+        private void rb_read_hold_reg_Checked(object sender, RoutedEventArgs e)
+        {
+            txt_number_of_values.Text = 16.ToString();
+        }
+
+        private void rb_read_coil_Checked(object sender, RoutedEventArgs e)
+        {
+            txt_number_of_values.Text = 4.ToString();
+        }
+
+        private void rb_write_coil_Checked(object sender, RoutedEventArgs e)
+        {
+            txt_number_of_values.Text = 4.ToString();
+        }
+
+        public int CS16(byte[] bytes,int len)
+        {
+            int cs = 0;
+            for (int j = 0; j < len; j++)
+            {
+                cs += (char)bytes[j];
+            }
+            return cs;
+        }
+
+        public int CS16x(byte[] bytes, int len)
+        {
+            int cs = 0;
+            for (int j = 0; j < len; j++)
+            {
+                cs += bytes[j]-48;
+            }
+            return cs;
+        }
+
+
     }
 }

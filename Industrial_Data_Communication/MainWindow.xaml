@@ -9,17 +9,17 @@
     <Grid Background="#FF98B7FF">
         <TextBox x:Name="txt_ip1" HorizontalAlignment="Left" Height="22" Margin="77,46,0,0" TextWrapping="Wrap" Text="192.168.43.161" VerticalAlignment="Top" Width="120"/>
         <TextBox x:Name="txt_port1" HorizontalAlignment="Left" Height="23" Margin="77,112,0,0" TextWrapping="Wrap" Text="4210" VerticalAlignment="Top" Width="120"/>
-        <Button x:Name="btn_send_command" Content="Send Command" HorizontalAlignment="Left" Margin="216,187,0,0" VerticalAlignment="Top" Width="120" Height="38" Click="btn_send_command_Click"/>
+        <Button x:Name="btn_send_command" Content="Send Command" HorizontalAlignment="Left" Margin="216,128,0,0" VerticalAlignment="Top" Width="120" Height="38" Click="btn_send_command_Click" IsEnabled="False"/>
         <TextBox x:Name="txt_starting_addr" HorizontalAlignment="Left" Height="23" Margin="528,46,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="93"/>
         <TextBox x:Name="txt_number_of_values" HorizontalAlignment="Left" Height="23" Margin="528,76,0,0" TextWrapping="Wrap" Text="4" VerticalAlignment="Top" Width="93"/>
-        <CheckBox x:Name="cb_led4" Content="LED 4" HorizontalAlignment="Left" Margin="660,106,0,0" VerticalAlignment="Top"/>
-        <CheckBox x:Name="cb_led1" Content="LED 1" HorizontalAlignment="Left" Margin="660,46,0,0" VerticalAlignment="Top"/>
-        <CheckBox x:Name="cb_led2" Content="LED 2" HorizontalAlignment="Left" Margin="660,66,0,0" VerticalAlignment="Top"/>
-        <CheckBox x:Name="cb_led3" Content="LED 3" HorizontalAlignment="Left" Margin="660,86,0,0" VerticalAlignment="Top"/>
+        <CheckBox x:Name="cb_led4" Content="LED 4" HorizontalAlignment="Left" Margin="660,106,0,0" VerticalAlignment="Top" IsChecked="True"/>
+        <CheckBox x:Name="cb_led1" Content="LED 1" HorizontalAlignment="Left" Margin="660,46,0,0" VerticalAlignment="Top" IsChecked="True"/>
+        <CheckBox x:Name="cb_led2" Content="LED 2" HorizontalAlignment="Left" Margin="660,66,0,0" VerticalAlignment="Top" IsChecked="True"/>
+        <CheckBox x:Name="cb_led3" Content="LED 3" HorizontalAlignment="Left" Margin="660,86,0,0" VerticalAlignment="Top" IsChecked="True"/>
         <Label Content="Starting Address :" HorizontalAlignment="Left" Margin="390,42,0,0" VerticalAlignment="Top"/>
         <Label Content="Number of Registers :" HorizontalAlignment="Left" Margin="390,72,0,0" VerticalAlignment="Top"/>
-        <RadioButton x:Name="rb_write_coil" Content="Write Coil" HorizontalAlignment="Left" Margin="216,48,0,0" VerticalAlignment="Top"/>
-        <RadioButton x:Name="rb_read_coil" Content="Read Coil" HorizontalAlignment="Left" Margin="216,78,0,0" VerticalAlignment="Top"/>
+        <RadioButton x:Name="rb_write_coil" Content="Write Coil" HorizontalAlignment="Left" Margin="216,48,0,0" VerticalAlignment="Top" IsChecked="True" Checked="rb_write_coil_Checked"/>
+        <RadioButton x:Name="rb_read_coil" Content="Read Coil" HorizontalAlignment="Left" Margin="216,78,0,0" VerticalAlignment="Top" Checked="rb_read_coil_Checked"/>
         <TextBox x:Name="txt_response" HorizontalAlignment="Left" Height="54" Margin="528,134,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="218"/>
         <Label Content="IP 1:" HorizontalAlignment="Left" Margin="23,42,0,0" VerticalAlignment="Top"/>
         <Label Content="PORT 1 :" HorizontalAlignment="Left" Margin="23,108,0,0" VerticalAlignment="Top"/>
@@ -28,8 +28,8 @@
         <TextBox x:Name="txt_port2" HorizontalAlignment="Left" Height="23" Margin="77,143,0,0" TextWrapping="Wrap" Text="4210" VerticalAlignment="Top" Width="120"/>
         <Label Content="IP 2 :" HorizontalAlignment="Left" Margin="23,75,0,0" VerticalAlignment="Top"/>
         <Label Content="PORT 2 :" HorizontalAlignment="Left" Margin="23,139,0,0" VerticalAlignment="Top"/>
-        <RadioButton x:Name="rb_read_hold_reg" Content="Read Holding Register" HorizontalAlignment="Left" Margin="216,106,0,0" VerticalAlignment="Top"/>
-        <Button x:Name="btn_senario" Content="SENARIO" HorizontalAlignment="Left" Margin="579,193,0,0" VerticalAlignment="Top" Width="127" Height="38" Click="btn_senario_Click" RenderTransformOrigin="0.5,0.5">
+        <RadioButton x:Name="rb_read_hold_reg" Content="Read Holding Register" HorizontalAlignment="Left" Margin="216,106,0,0" VerticalAlignment="Top" Checked="rb_read_hold_reg_Checked"/>
+        <Button x:Name="btn_senario" Content="SENARIO" HorizontalAlignment="Left" Margin="579,193,0,0" VerticalAlignment="Top" Width="127" Height="38" Click="btn_senario_Click" RenderTransformOrigin="0.5,0.5" IsEnabled="False">
             <Button.RenderTransform>
                 <TransformGroup>
                     <ScaleTransform/>
@@ -39,9 +39,9 @@
                 </TransformGroup>
             </Button.RenderTransform>
         </Button>
-        <Button x:Name="btn_stop" Content="STOP" HorizontalAlignment="Left" Margin="579,235,0,0" VerticalAlignment="Top" Width="127" Height="37" Click="btn_stop_Click"/>
-        <Button x:Name="btn_tcp" Content="TCP" HorizontalAlignment="Left" Margin="23,173,0,0" VerticalAlignment="Top" Width="119" Height="35" Click="btn_tcp_Click"/>
-        <Button x:Name="btn_udp" Content="UDP" HorizontalAlignment="Left" Margin="23,220,0,0" VerticalAlignment="Top" Width="119" Height="34" Click="btn_udp_Click"/>
+        <Button x:Name="btn_stop" Content="STOP" HorizontalAlignment="Left" Margin="579,235,0,0" VerticalAlignment="Top" Width="127" Height="37" Click="btn_stop_Click" IsEnabled="False"/>
+        <Button x:Name="btn_tcp" Content="TCP" HorizontalAlignment="Left" Margin="78,177,0,0" VerticalAlignment="Top" Width="119" Height="35" Click="btn_tcp_Click"/>
+        <Button x:Name="btn_udp" Content="UDP" HorizontalAlignment="Left" Margin="78,224,0,0" VerticalAlignment="Top" Width="119" Height="34" Click="btn_udp_Click"/>
 
     </Grid>
 </Window>
